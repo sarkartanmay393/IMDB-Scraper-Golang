@@ -67,8 +67,8 @@ func main() {
 	}
 
 	// Writing JSON into a file called 'mm-dd-output.json'.
-	fileName := fmt.Sprintf("%s-output.json", input)
-	err = os.WriteFile(fileName, data, 0644)
+	fileName := fmt.Sprintf("%s.json", input)
+	err = os.WriteFile(fmt.Sprintf("./outputs/%s", fileName), data, 0644)
 	if err != nil {
 		log.Println("Error while writing JSON: ", err)
 	}
