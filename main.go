@@ -82,8 +82,17 @@ func main() {
 	fileName := fmt.Sprintf("%s.json", input)
 	err = os.WriteFile(fmt.Sprintf("./outputs/%s", fileName), data, 0644)
 	if err != nil {
-		log.Println("Error while writing JSON: ", err)
+		if err.Error() == "open ./outputs/12-23.json: no such file or directory" {
+			log.Println("Making directory named outputs.")
+			os.Mkdir("./outputs", 0755) // making a directory.
+			err := os.WriteFile(fmt.Sprintf("./outputs/%s", fileName), data, 0644)
+			if err == nil {
+				log.Fatalln("Web is scraped and JSON file is created.")
+			}
+		}
+		log.Fatalln("Error while writing JSON: ", err)
 	}
+	log.Println("Web is scraped and JSON file is created.")
 }
 
 // Crawl crawls the imdb website for a given page and returns a list of stars.
