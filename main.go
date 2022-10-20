@@ -27,6 +27,11 @@ type Movie struct {
 	Release string `json:"release"`
 }
 
+// main takes two arguments, month and day.
+// Parse them into integers and call Crawl function.
+// Crawl function returns a slice of stars.
+// That slice is converted into JSON object.
+// And then writes the object into a file.
 func main() {
 
 	// Printing prompt for user to input values.
@@ -34,7 +39,8 @@ func main() {
 	// User should type just like this. e.g.. 12-23
 	fmt.Println("Type a date and month in (MM-DD) format:	")
 	_, err := fmt.Scanf("%s", &input)
-	if err != nil {
+	if err != nil { // Error handling
+		// Fatalln will print the error and exit the program.
 		log.Fatalln("Unable to read input because	", err)
 	}
 
@@ -53,9 +59,13 @@ func main() {
 	}
 
 	// Crawling the website with the given month and day and stores the data into a slice of Star.
+	// Calling Crawl func with month and day.
+	// Storing the returned slice of Star into stars variable.
 	stars := Crawl(month, day)
 
 	// To print all the scraped data in terminal.
+	// This code part is commented out, because it is not necessary.
+	// You can play with it to show the scraped data on terminal.
 	// encoder := json.NewEncoder(os.Stderr)
 	// encoder.SetIndent("", "   ")
 	// err := encoder.Encode(stars)
@@ -66,13 +76,14 @@ func main() {
 		log.Println("Error while marshalling JSON: ", err)
 	}
 
-	// Writing JSON into a file called 'mm-dd-output.json'.
+	// Writing JSON into a file called 'mm-dd.json'.
+	// file name will vary according to the month and day.
+	// We are using os pkg to write the file.
 	fileName := fmt.Sprintf("%s.json", input)
 	err = os.WriteFile(fmt.Sprintf("./outputs/%s", fileName), data, 0644)
 	if err != nil {
 		log.Println("Error while writing JSON: ", err)
 	}
-
 }
 
 // Crawl crawls the imdb website for a given page and returns a list of stars.
@@ -81,18 +92,25 @@ func Crawl(month int, day int) []Star {
 	// stars will hold all the scraped data.
 	var stars []Star
 
-	// Main collector initialized.
+	// Collectors are used to scrape data from a website.
+	// Main collector instance is initialized here.
+	// Our main collector c will only look for profile links of celebreties
+	// and go on next pages if there is next button on current page.
 	c := colly.NewCollector(
 		// Colly collector will only visit the given domains.
 		colly.AllowedDomains("www.imdb.com", "imdb.com"),
 		// Colly collector stores cache and uses from here.
 		colly.CacheDir("./.imdb_cache"),
+	// Cache is disabled by default, so we need to enable it.
 	)
 
-	// Info Collector is made using cloing.
+	// ic stands for Info Collector, is just cloned from main collector.
+	// This collector will be used to scrape data from the info page.
+	// It will go inside a profile link and look for data in that only.
+	// This collector will be on work everytime main collector find a new profile link.
 	ic := c.Clone()
 
-	// Where crawler sees 'mode-detail' class attribute, it will call callback function.
+	// Where crawler sees 'mode-detail' class attribute, it will call back the function.
 	c.OnHTML(".mode-detail", func(e *colly.HTMLElement) {
 		// Getting the profile url from the href attribute, it is goquery selector string.
 		// 'div.lister-item-image > a' is path of profile url in HTML.
@@ -109,6 +127,8 @@ func Crawl(month int, day int) []Star {
 	})
 
 	// This crawler function gets into next page, if there is one.
+	// On IMDB, there is a button with text 'Next' on each page with
+	// class 'lister-page-next next-page' and we are looking only for that.
 	c.OnHTML("a.lister-page-next", func(e *colly.HTMLElement) {
 		// Getting the next page url from the href attribute.
 		nextPageUrl := e.Attr("href")
@@ -148,13 +168,13 @@ func Crawl(month int, day int) []Star {
 		fmt.Println("Visiting:	", r.URL.String())
 	})
 
-	// Our link to crawl.
+	// Our link to crawl with user specified date and month.
 	startUrl := fmt.Sprintf("https://www.imdb.com/search/name/?birth_monthday=%d-%d", month, day)
 	fmt.Println("Starting crawling into	", startUrl)
 
 	// Starting the main collector.
 	c.Visit(startUrl)
 
-	// Returning all the scraped data.
+	// Returning all the scraped data in a slice of stars.
 	return stars
 }
